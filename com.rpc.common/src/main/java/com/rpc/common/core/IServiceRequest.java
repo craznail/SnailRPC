@@ -1,5 +1,7 @@
 package com.rpc.common.core;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * @author craznail@gmail.com
  * @date 2018/12/25 14:12
@@ -11,5 +13,5 @@ public interface IServiceRequest {
      * @param request
      * @return
      */
-    void send(RpcRequest request);
+    CompletableFuture<?> send(RpcRequest request);
 }

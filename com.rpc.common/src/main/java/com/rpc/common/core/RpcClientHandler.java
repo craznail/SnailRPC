@@ -3,6 +3,10 @@ package com.rpc.common.core;
 import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -11,26 +15,31 @@ import java.util.concurrent.CountDownLatch;
  */
 public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> implements IServiceRequest {
     private Logger logger = LoggerFactory.getLogger(RpcClientHandler.class);
+    private Map<String, CompletableFuture<RpcResponse>> pendingRpc = new ConcurrentHashMap<>();
     private Channel channel;
 
 
-    public void send(RpcRequest request) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                latch.countDown();
-            }
-        });
+    @Override
+    public CompletableFuture send(RpcRequest request) {
         try {
-            latch.await();
+            channel.writeAndFlush(request).sync();
+            CompletableFuture<RpcResponse> futrue = new CompletableFuture<>();
+            pendingRpc.put(request.getRequestId(), futrue);
+            return futrue;
         } catch (InterruptedException e) {
             logger.error(e.getMessage());
+            return null;
         }
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse rpcResponse) throws Exception {
-
+        String requestId = rpcResponse.getRequestId();
+        var rpcFuture = pendingRpc.get(requestId);
+        if (rpcFuture != null) {
+            pendingRpc.remove(requestId);
+            rpcFuture.complete(rpcResponse);
+        }
     }
 
     @Override
