@@ -15,7 +15,7 @@ import java.util.UUID;
 public class ProxyBuilder {
     public static <T> T build(Class<T> clazz) {
         InvocationHandler handler = new RequestInvocationHandler();
-        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, handler);
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, handler);
     }
 
     static class RequestInvocationHandler implements InvocationHandler {
