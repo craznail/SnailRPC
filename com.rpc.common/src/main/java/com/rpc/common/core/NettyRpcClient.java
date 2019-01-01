@@ -63,17 +63,30 @@ public class NettyRpcClient implements IServiceRequest {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                isConnected = true;
-                condition.signalAll();
+                notifyConnected();
             }
         });
     }
 
     public void waitForConnected() throws InterruptedException {
         lock.lockInterruptibly();
-        while (!isConnected) {
-            condition.await();
+        try {
+            while (!isConnected) {
+                condition.await();
+            }
+            connect();
+        } finally {
+            lock.unlock();
         }
-        connect();
+    }
+
+    public void notifyConnected() {
+        lock.lock();
+        try {
+            isConnected = true;
+            condition.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }
 }
