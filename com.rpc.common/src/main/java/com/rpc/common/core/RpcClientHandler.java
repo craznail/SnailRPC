@@ -3,6 +3,8 @@ package com.rpc.common.core;
 import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,18 +18,12 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> i
     private Map<String, CompletableFuture<RpcResponse>> pendingRpc = new ConcurrentHashMap<>();
     private Channel channel;
 
-
     @Override
     public CompletableFuture send(RpcRequest request) {
-        try {
-            channel.writeAndFlush(request).sync();
-            CompletableFuture<RpcResponse> futrue = new CompletableFuture<>();
-            pendingRpc.put(request.getRequestId(), futrue);
-            return futrue;
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
-            return null;
-        }
+        channel.writeAndFlush(request);
+        CompletableFuture<RpcResponse> futrue = new CompletableFuture<>();
+        pendingRpc.put(request.getRequestId(), futrue);
+        return futrue;
     }
 
     @Override

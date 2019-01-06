@@ -1,6 +1,5 @@
 package com.rpc.common.serializer;
 
-import sun.reflect.misc.ReflectUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -26,7 +25,7 @@ public class ObjectInputStreamWithLoader extends ObjectInputStream {
             return super.resolveClass(aClass);
         } else {
             String name = aClass.getName();
-            ReflectUtil.checkPackageAccess(name);
+            //ReflectUtil.checkPackageAccess(name);
             // Query the class loader ...
             return Class.forName(name, false, loader);
         }

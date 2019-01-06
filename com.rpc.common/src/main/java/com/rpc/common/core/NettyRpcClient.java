@@ -7,28 +7,25 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+
 /**
  * @author craznail@gmail.com
  * @date 2018/12/31 7:40
  */
 public class NettyRpcClient implements IServiceRequest {
-    static {
-        instance = new NettyRpcClient();
-        handler = new RpcClientHandler();
-    }
-
-    private static NettyRpcClient instance = null;
+    private final static NettyRpcClient INSTANCE = new NettyRpcClient();
     private static RpcClientHandler handler = null;
 
     public NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup();
@@ -36,16 +33,33 @@ public class NettyRpcClient implements IServiceRequest {
     private boolean isConnected = false;
     private static ReentrantLock lock = new ReentrantLock();
     private Condition condition = lock.newCondition();
+    private Logger logger = LoggerFactory.getLogger(NettyRpcClient.class);
 
     private NettyRpcClient() {
+        connect();
+    }
+
+    public static NettyRpcClient getInstance() {
+        return INSTANCE;
     }
 
     @Override
     public CompletableFuture<?> send(RpcRequest request) {
-        return handler.send(request);
+        try {
+            lock.lockInterruptibly();
+            while (!isConnected) {
+                condition.await();
+            }
+            return handler.send(request);
+        } catch (InterruptedException ex) {
+            logger.error("send request interrupted", ex);
+            return null;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public void connect() {
+    private void connect() {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(nioEventLoopGroup).channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
@@ -62,22 +76,11 @@ public class NettyRpcClient implements IServiceRequest {
         ChannelFuture future = bootstrap.connect(remoteAddress);
         future.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+            public void operationComplete(ChannelFuture channelFuture) {
+                handler = new RpcClientHandler();
                 notifyConnected();
             }
         });
-    }
-
-    public void waitForConnected() throws InterruptedException {
-        lock.lockInterruptibly();
-        try {
-            while (!isConnected) {
-                condition.await();
-            }
-            connect();
-        } finally {
-            lock.unlock();
-        }
     }
 
     public void notifyConnected() {
@@ -88,5 +91,12 @@ public class NettyRpcClient implements IServiceRequest {
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * 停止
+     */
+    public void stop() {
+
     }
 }

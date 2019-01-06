@@ -1,5 +1,6 @@
 package com.rpc.common.proxy;
 
+import com.rpc.common.core.NettyRpcClient;
 import com.rpc.common.core.RpcClientHandler;
 import com.rpc.common.core.RpcRequest;
 
@@ -29,7 +30,7 @@ public class ProxyBuilder {
             request.setParameters(args);
             request.setRequestId(UUID.randomUUID().toString());
 
-            return new RpcClientHandler().send(request);
+            return NettyRpcClient.getInstance().send(request).get();
         }
     }
 }
