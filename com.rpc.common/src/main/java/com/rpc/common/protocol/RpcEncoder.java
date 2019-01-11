@@ -19,6 +19,7 @@ public class RpcEncoder extends MessageToByteEncoder {
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, Object o, ByteBuf byteBuf) throws Exception {
         if (genericClass.isInstance(o)) {
+            System.out.println(o.getClass().getSimpleName());
             byte[] data = HessianUtil.serialize(o);
             byteBuf.writeInt(data.length);
             byteBuf.writeBytes(data);

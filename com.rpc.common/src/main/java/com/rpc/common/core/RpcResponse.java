@@ -1,10 +1,12 @@
 package com.rpc.common.core;
 
+import java.io.Serializable;
+
 /**
  * @author craznail@gmail.com
  * @date 2018/12/27 14:53
  */
-public class RpcResponse {
+public class RpcResponse implements Serializable {
     private String requestId;
     private String error;
     private Object result;
@@ -21,15 +23,15 @@ public class RpcResponse {
         return this.error;
     }
 
-    private void setError(String error) {
+    public void setError(String error) {
         this.error = error;
     }
 
-    private Object getResult() {
+    public Object getResult() {
         return this.result;
     }
 
-    private void setResult(Object result) {
+    public void setResult(Object result) {
         this.result = result;
     }
 }

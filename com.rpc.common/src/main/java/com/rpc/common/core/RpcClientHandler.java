@@ -18,6 +18,11 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> i
     private Map<String, CompletableFuture<RpcResponse>> pendingRpc = new ConcurrentHashMap<>();
     private Channel channel;
 
+    public void sendTest(RpcRequest request)
+    {
+        channel.writeAndFlush(request);
+    }
+
     @Override
     public CompletableFuture send(RpcRequest request) {
         channel.writeAndFlush(request);
@@ -44,7 +49,7 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> i
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.fireChannelActive();
+        super.channelActive(ctx);
     }
 
     @Override
