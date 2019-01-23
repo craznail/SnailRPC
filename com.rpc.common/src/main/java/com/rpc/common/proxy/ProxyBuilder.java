@@ -1,7 +1,6 @@
 package com.rpc.common.proxy;
 
 import com.rpc.common.core.NettyRpcClient;
-import com.rpc.common.core.RpcClientHandler;
 import com.rpc.common.core.RpcRequest;
 import com.rpc.common.core.RpcResponse;
 
@@ -9,6 +8,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author craznail@gmail.com
@@ -17,7 +17,7 @@ import java.util.UUID;
 public class ProxyBuilder<B> {
     public <T> T build(Class<T> clazz) {
         InvocationHandler handler = new RequestInvocationHandler();
-        return  (T)Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, handler);
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, handler);
     }
 
     class RequestInvocationHandler implements InvocationHandler {
@@ -32,8 +32,8 @@ public class ProxyBuilder<B> {
             request.setRequestId(UUID.randomUUID().toString());
 
             try {
-                RpcResponse response = (RpcResponse) NettyRpcClient.getInstance().send(request).get();
-                return (B)response.getResult();
+                var responseFuture = NettyRpcClient.getInstance().send(request);
+                return (B) responseFuture.get().getResult();
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

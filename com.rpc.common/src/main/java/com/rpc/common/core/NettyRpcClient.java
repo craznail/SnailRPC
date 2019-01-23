@@ -32,7 +32,7 @@ public class NettyRpcClient implements IServiceRequest {
     private boolean isConnected = false;
     private ReentrantLock lock = new ReentrantLock();
     private Condition condition = lock.newCondition();
-    //private Logger logger = LoggerFactory.getLogger(NettyRpcClient.class);
+    private Logger logger = LoggerFactory.getLogger(NettyRpcClient.class);
 
     private NettyRpcClient() {
     }
@@ -46,7 +46,7 @@ public class NettyRpcClient implements IServiceRequest {
     }
 
     @Override
-    public CompletableFuture<?> send(RpcRequest request) {
+    public CompletableFuture<RpcResponse> send(RpcRequest request) {
         try {
             lock.lockInterruptibly();
             while (!isConnected) {
@@ -54,7 +54,7 @@ public class NettyRpcClient implements IServiceRequest {
             }
             return rpcClientHandler.send(request);
         } catch (InterruptedException ex) {
-            //logger.error("send request interrupted", ex);
+            logger.error("send request interrupted", ex);
             return null;
         } finally {
             lock.unlock();

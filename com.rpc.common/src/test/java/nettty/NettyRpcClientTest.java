@@ -11,7 +11,10 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.junit.Test;
+
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 import static org.junit.Assert.*;
 
 /**
@@ -21,7 +24,7 @@ import static org.junit.Assert.*;
 public class NettyRpcClientTest {
 
     @Test
-    public void NettyClientConnectTest() {
+    public void NettyClientConnectTest() throws Exception {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -31,8 +34,13 @@ public class NettyRpcClientTest {
         thread.start();
 
         ICaculator caculator = new ProxyBuilder<Integer>().build(ICaculator.class);
-        int sum = caculator.Sum(2, 3);
-        assertSame("should be same", sum, 5);
+        CompletableFuture<Integer> sumFuture = CompletableFuture.supplyAsync(() -> {
+            return caculator.Sum(2, 3);
+        });
+        sumFuture.whenComplete((e, v) -> {
+            assertEquals(e.intValue(), 5);
+        });
+        assertEquals(sumFuture.get().intValue(), 5);
     }
 
     @Test
@@ -81,6 +89,7 @@ public class NettyRpcClientTest {
         var requestServer = (RpcRequest) inboudData;
         assertEquals(requestServer.getRequestId(), request.getRequestId());
     }
+
     @Test
     public void RpcEncoderDecoderTest() throws Exception {
         RpcRequest request = new RpcRequest();
@@ -93,7 +102,7 @@ public class NettyRpcClientTest {
         channel.writeOutbound(request);
         ByteBuf encodedOut = channel.readOutbound();
         channel.writeInbound(encodedOut);
-        RpcRequest requstServer = (RpcRequest)channel.readInbound();
+        RpcRequest requstServer = (RpcRequest) channel.readInbound();
         assertEquals(requstServer.getRequestId(), request.getRequestId());
     }
 }
